@@ -155,7 +155,7 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
                     const proto = request.headers.get('x-forwarded-proto') || 'http';
                     originExisting = `${proto}://${host}`;
                 }
-                const shortUrlExisting = `${originExisting}/${existingSlug}`;
+                const shortUrlExisting = `${originExisting}/s/${existingSlug}`;
                 return new Response(
                     JSON.stringify({ slug: existingSlug, url: urlObj.toString(), shortUrl: shortUrlExisting }),
                     { status: 200, headers: { 'content-type': 'application/json; charset=utf-8' } }
@@ -209,7 +209,7 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
             const proto = request.headers.get('x-forwarded-proto') || 'http';
             origin = `${proto}://${host}`;
         }
-        const shortUrl = `${origin}/${slug}`;
+        const shortUrl = `${origin}/s/${slug}`;
 
         return new Response(
             JSON.stringify({ slug, url: urlObj.toString(), shortUrl }),

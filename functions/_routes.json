@@ -2,7 +2,7 @@
   "version": 1,
   "include": [
     "/api/*",
-    "/:slug"
+    "/s/:slug"
   ],
   "exclude": []
 }

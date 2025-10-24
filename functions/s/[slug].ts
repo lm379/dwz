@@ -12,13 +12,6 @@ function resolveKV(env: Env): { kv?: KVNamespace; bindingName: string } {
     return { kv, bindingName };
 }
 
-function resolveAssets(env: Env): { assets?: { fetch: (req: Request) => Promise<Response> }; bindingName: string } {
-    const bindingName = 'ASSETS';
-    const g = globalThis as any;
-    const assets = (g?.[bindingName] as any) ?? ((env as any)?.[bindingName] as any);
-    return { assets, bindingName };
-}
-
 export async function onRequest(context: { request: Request; env: Env; params: { slug?: string } }): Promise<Response> {
     const { request, env, params } = context;
     const { kv, bindingName } = resolveKV(env);
@@ -31,22 +24,9 @@ export async function onRequest(context: { request: Request; env: Env; params: {
     }
 
     const slug = (params?.slug || '').trim();
-    const pathname = (() => { try { return new URL(request.url).pathname; } catch { return '/'; } })();
-    const isStatic = pathname.startsWith('/_next/') || pathname === '/favicon.ico' || pathname === '/robots.txt' || pathname === '/sitemap.xml';
 
-    if (!slug || isStatic) {
-        // Prioritize ASSETS for static/Next resources, then fall back to default fetch
-        const { assets } = resolveAssets(env);
-        if (assets && typeof assets.fetch === 'function') {
-            try {
-                return await assets.fetch(request);
-            } catch {}
-        }
-        try {
-            return await fetch(request);
-        } catch {
-            return new Response('Not Found', { status: 404 });
-        }
+    if (!slug) {
+        return new Response('Not Found', { status: 404 });
     }
 
     try {

@@ -21,12 +21,24 @@ function extractSlug(input: string): string {
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(raw)) {
         try {
             const u = new URL(raw);
-            return (u.pathname.replace(/^\//, '').split('/')[0] || '').trim();
+            // Handle /s/slug format
+            const parts = u.pathname.replace(/^\//, '').split('/');
+            if (parts[0] === 's' && parts[1]) {
+                return parts[1].trim();
+            }
+            return (parts[0] || '').trim();
         } catch {
             return '';
         }
     }
-    if (raw.includes('/')) return raw.replace(/^\//, '').split('/')[0].trim();
+    if (raw.includes('/')) {
+        // Handle /s/slug or just slug
+        const parts = raw.replace(/^\//, '').split('/');
+        if (parts[0] === 's' && parts[1]) {
+            return parts[1].trim();
+        }
+        return parts[0].trim();
+    }
     return raw;
 }
 

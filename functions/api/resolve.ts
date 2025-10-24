@@ -51,7 +51,13 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
     if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(raw)) {
         try {
             const u = new URL(raw);
-            slug = u.pathname.replace(/^\//, '').split('/')[0] || '';
+            // Handle /s/slug format
+            const parts = u.pathname.replace(/^\//, '').split('/');
+            if (parts[0] === 's' && parts[1]) {
+                slug = parts[1];
+            } else {
+                slug = parts[0] || '';
+            }
         } catch {
             return new Response(JSON.stringify({ error: 'Invalid url parameter' }), {
                 status: 400,
@@ -59,8 +65,13 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
             });
         }
     } else if (raw.includes('/')) {
-        // If a path is accidentally passed, take the first segment
-        slug = raw.replace(/^\//, '').split('/')[0];
+        // If a path is accidentally passed, take the first or second segment
+        const parts = raw.replace(/^\//, '').split('/');
+        if (parts[0] === 's' && parts[1]) {
+            slug = parts[1];
+        } else {
+            slug = parts[0];
+        }
     }
 
     if (!slug) {
