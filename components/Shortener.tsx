@@ -143,11 +143,8 @@ export default function Shortener() {
                             <div>原始：{created.url}</div>
                             {(created.qrDataUrl || created.qrUrl) && (
                                 <div className="mt-3">
-                                    <div className="text-sm text-gray-400 mb-2">二维码（长按或右键图片可保存）</div>
-                                    <img src={created.qrDataUrl || created.qrUrl} alt="QR code" width={200} height={200} className="border border-gray-700 rounded-md" />
-                                    <div className="mt-2">
-                                        <a href={created.qrDataUrl || created.qrUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-400 hover:underline">在新标签打开图片以保存</a>
-                                    </div>
+                                    <div className="text-sm text-gray-400 mb-2">短链二维码</div>
+                                    <img src={created.qrDataUrl || created.qrUrl} alt="QR code" width={250} height={250} className="border border-gray-700 rounded-md" />
                                 </div>
                             )}
                         </div>
@@ -158,7 +155,7 @@ export default function Shortener() {
                     <h2 className="text-xl font-semibold text-white mb-4">还原短链</h2>
                     <form onSubmit={onResolve} className="space-y-4">
                         <div>
-                            <label className="block text-sm text-gray-300 mb-1">短链别名</label>
+                            <label className="block text-sm text-gray-300 mb-1">短链别名或完整短链 URL</label>
                             <input
                                 value={qSlug}
                                 onChange={(e) => setQSlug(e.target.value)}
