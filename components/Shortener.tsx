@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import QRCode from 'qrcode';
 
-type ShortenResp = { slug: string; url: string; shortUrl: string };
+type ShortenResp = { slug: string; url: string; shortUrl: string; qrUrl?: string; qrDataUrl?: string };
 
 async function apiShorten(url: string, slug?: string): Promise<ShortenResp> {
     const res = await fetch('/api/shorten', {
@@ -69,6 +70,16 @@ export default function Shortener() {
         setCreated(null);
         try {
             const data = await apiShorten(url, slug || undefined);
+            // if server didn't return a qrDataUrl, generate on client using 'qrcode'
+            if (!data.qrDataUrl) {
+                try {
+                    const svg = await QRCode.toString(data.shortUrl, { type: 'svg', margin: 1, width: 200 });
+                    const encoded = 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+                    data.qrDataUrl = encoded;
+                } catch (err) {
+                    // ignore QR generation error, keep server qrUrl if any
+                }
+            }
             setCreated(data);
         } catch (e: any) {
             setErr(e.message);
@@ -130,6 +141,15 @@ export default function Shortener() {
                                 </a>
                             </div>
                             <div>原始：{created.url}</div>
+                            {(created.qrDataUrl || created.qrUrl) && (
+                                <div className="mt-3">
+                                    <div className="text-sm text-gray-400 mb-2">二维码（长按或右键图片可保存）</div>
+                                    <img src={created.qrDataUrl || created.qrUrl} alt="QR code" width={200} height={200} className="border border-gray-700 rounded-md" />
+                                    <div className="mt-2">
+                                        <a href={created.qrDataUrl || created.qrUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-400 hover:underline">在新标签打开图片以保存</a>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
