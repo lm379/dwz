@@ -1,10 +1,8 @@
 {
-  "include": ["/*"],
-  "exclude": [
-    "/",
-    "/_next/*",
-    "/favicon.ico",
-    "/robots.txt",
-    "/sitemap.xml"
-  ]
+  "version": 1,
+  "include": [
+    "/api/*",
+    "/:slug"
+  ],
+  "exclude": []
 }

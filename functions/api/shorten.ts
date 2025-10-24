@@ -28,6 +28,27 @@ function readApiToken(env: Env): string | undefined {
     );
 }
 
+function readDisableFlag(env: Env): boolean {
+    const g = globalThis as any;
+    const p = (typeof process !== 'undefined' ? (process as any).env : undefined) || {};
+    const raw = (
+        (env as any)?.NEXT_PUBLIC_DISABLE_API_TOKEN_CHECK ||
+        (env as any)?.DISABLE_API_TOKEN_CHECK ||
+        p?.NEXT_PUBLIC_DISABLE_API_TOKEN_CHECK ||
+        p?.DISABLE_API_TOKEN_CHECK ||
+        g?.NEXT_PUBLIC_DISABLE_API_TOKEN_CHECK ||
+        g?.DISABLE_API_TOKEN_CHECK ||
+        ''
+    );
+    const v = String(raw).trim().toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+}
+
+function isLocalDev(req: Request): boolean {
+    const host = (req.headers.get('host') || '').toLowerCase();
+    return /^localhost(:\d+)?$/.test(host) || /^127\.0\.0\.1(:\d+)?$/.test(host);
+}
+
 export async function onRequest(context: { request: Request; env: Env }): Promise<Response> {
     const { request, env } = context;
     const { kv, bindingName } = resolveKV(env);
@@ -58,11 +79,13 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
 
     // Token check: only enforce when env token is set. Allow same-origin web UI without token.
     const tokenEnv = readApiToken(env);
-    if (tokenEnv) {
+    const disableCheck = readDisableFlag(env);
+    const localDev = isLocalDev(request);
+    if (tokenEnv && !disableCheck && !localDev) {
         const tokenReq = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '')
             || (request.headers.get('x-api-token') || '');
 
-        // Resolve request origin
+        // Resolve request origin (scheme + host)
         let reqOrigin: string;
         try { reqOrigin = new URL(request.url).origin; }
         catch {
@@ -71,12 +94,17 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
             reqOrigin = `${proto}://${host}`;
         }
 
-        // Parse referer origin
-        let refererOrigin = '';
-        const referer = request.headers.get('referer') || '';
-        try { refererOrigin = new URL(referer).origin; } catch { }
+        // Prefer Origin header, fallback to Referer
+        const originHeader = request.headers.get('origin') || '';
+        let originHeaderOrigin = '';
+        try { originHeaderOrigin = originHeader ? new URL(originHeader).origin : ''; } catch {}
 
-        const isSameOrigin = refererOrigin && refererOrigin === reqOrigin;
+        const refererHeader = request.headers.get('referer') || '';
+        let refererHeaderOrigin = '';
+        try { refererHeaderOrigin = refererHeader ? new URL(refererHeader).origin : ''; } catch {}
+
+        const candidateOrigin = originHeaderOrigin || refererHeaderOrigin;
+        const isSameOrigin = candidateOrigin && candidateOrigin === reqOrigin;
 
         if (!isSameOrigin && (!tokenReq || tokenReq !== tokenEnv)) {
             return new Response(JSON.stringify({ error: 'Unauthorized' }), {
