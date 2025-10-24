@@ -32,12 +32,16 @@ export async function onRequest(context: { request: Request; env: Env; params: {
 
     const slug = (params?.slug || '').trim();
     if (!slug) {
-        // Pass through to static/Next assets for homepage and other routes
-        const { assets } = resolveAssets(env);
-        if (assets && typeof assets.fetch === 'function') {
-            return assets.fetch(request);
+        // Pass through to static/Next app for homepage and other routes
+        try {
+            return await fetch(request);
+        } catch {
+            const { assets } = resolveAssets(env);
+            if (assets && typeof assets.fetch === 'function') {
+                return assets.fetch(request);
+            }
+            return new Response('Not Found', { status: 404 });
         }
-        return new Response('Not Found', { status: 404 });
     }
 
     try {
