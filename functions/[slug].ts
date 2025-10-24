@@ -12,8 +12,15 @@ function resolveKV(env: Env): { kv?: KVNamespace; bindingName: string } {
     return { kv, bindingName };
 }
 
+function resolveAssets(env: Env): { assets?: { fetch: (req: Request) => Promise<Response> }; bindingName: string } {
+    const bindingName = 'ASSETS';
+    const g = globalThis as any;
+    const assets = (g?.[bindingName] as any) ?? ((env as any)?.[bindingName] as any);
+    return { assets, bindingName };
+}
+
 export async function onRequest(context: { request: Request; env: Env; params: { slug?: string } }): Promise<Response> {
-    const { env, params } = context;
+    const { request, env, params } = context;
     const { kv, bindingName } = resolveKV(env);
 
     if (!kv) {
@@ -25,7 +32,12 @@ export async function onRequest(context: { request: Request; env: Env; params: {
 
     const slug = (params?.slug || '').trim();
     if (!slug) {
-        return new Response('Bad Request', { status: 400 });
+        // Pass through to static/Next assets for homepage and other routes
+        const { assets } = resolveAssets(env);
+        if (assets && typeof assets.fetch === 'function') {
+            return assets.fetch(request);
+        }
+        return new Response('Not Found', { status: 404 });
     }
 
     try {
