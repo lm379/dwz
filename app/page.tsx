@@ -1,9 +1,9 @@
-import Kv from '@/components/Kv';
+import Shortener from '@/components/Shortener';
 
 export default function Home() {
   return (
     <main>
-      <Kv />
+      <Shortener />
     </main>
   );
 }

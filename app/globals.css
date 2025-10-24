@@ -50,6 +50,7 @@
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
@@ -82,57 +83,8 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
-}
-
-.kv-container {
-  background: linear-gradient(135deg, #6e8efb, #a777e3);
-  color: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  max-width: 600px;
-  margin: 2rem auto;
-}
-
-.kv-title {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.kv-content {
-  background-color: rgba(255, 255, 255, 0.2);
-  padding: 1.5rem;
-  border-radius: 8px;
-}
-
-.kv-text {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
-}
-
-.kv-counter {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 1.1rem;
-}
-
-.kv-counter-label {
-  margin-right: 0.5rem;
-}
-
-.kv-counter-value {
-  font-weight: bold;
-  font-size: 1.3rem;
-  background-color: rgba(255, 255, 255, 0.3);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-}
-
-.kv-counter-loading {
-  height: 0.5rem;
 }

@@ -1,38 +1,60 @@
-# EdgeOne Pages Functions: KV Store
+# EdgeOne Pages URL Shortener (Functions + KV)
 
-This example demonstrates how to use EdgeOne Pages Functions to store and retrieve data from the KV store.
+A production-ready URL shortener built on EdgeOne Pages Functions with KV storage. Provides a complete RESTful API and a minimal Next.js UI for creating and resolving short links.
 
-## Deploy
+## Features
+- Create short link for a given URL (support custom slug)
+- Idempotent: same URL returns the same slug
+- 302 redirect via path `/:slug`
+- Resolve API to get original URL
+- Visit counter (+1 on each redirect) and stats API
+- Configurable KV binding name via environment variable
 
-[![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?from=github&template=functions-kv)
+## Endpoints
+- POST `/api/shorten`
+  - Body: `{ url: string; slug?: string }`
+  - Response: `{ slug, url, shortUrl }`
+  - Notes: 
+    - If `slug` omitted, auto-generate
+    - If the URL already exists, returns the existing short link (200)
+- GET `/api/resolve?slug=abc123` or `/api/resolve?slug=https://your-domain/abc123` or `/api/resolve?url=https://your-domain/abc123`
+  - Response: `{ slug, url }` or `404`
+- GET `/:slug`
+  - 302 redirect to the original URL
+  - Increments visit counter `c:{slug}`
+- GET `/api/stats?slug=abc123`
+  - Response: `{ slug, url, visits }`
 
-More Templates: [EdgeOne Pages](https://edgeone.ai/pages/templates)
+## KV Keys
+- `s:{slug}` => original URL (forward mapping)
+- `u:{url}`  => slug (reverse mapping for idempotency)
+- `c:{slug}` => visit counter (string number)
 
-## Getting Started
+## Environment Variables
+- `DWZ_KV_BINDING`
+  - The KV binding name to use at runtime
+  - Default: `dwz_kv`
+  - Runtime lookup order: `globalThis[bindingName]` -> `env[bindingName]`
 
-First, run the development server:
-
+## Local Development
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
+Then open http://localhost:3000. The UI lets you create and resolve short links.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+EdgeOne CLI dev mode may send relative URLs to the function. The code handles this when building absolute URLs by composing from request headers (`host`, `x-forwarded-proto`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment (EdgeOne Pages)
+1) Create/attach a KV namespace and bind it with name `dwz_kv` (or your own name)
+2) If you use a custom binding name, set env `DWZ_KV_BINDING` to that name
+3) Deploy the project as an EdgeOne Pages app
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Tech Stack
+- Next.js (UI only)
+- EdgeOne Pages Functions (serverless APIs)
+- EdgeOne KV (storage)
+- TypeScript
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## License
+MIT

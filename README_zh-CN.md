@@ -1,36 +1,60 @@
-# EdgeOne Pages 函数: KV 存储
+# EdgeOne Pages 短网址服务（Functions + KV）
 
-此示例演示如何使用 EdgeOne Pages 函数从 KV 存储中存储和检索数据。
+基于 EdgeOne Pages Functions 与 KV 存储构建的短网址生成器。提供完整 RESTful API 与最小化的 Next.js 前端页面，支持创建、还原与跳转。
 
-## 部署
+## 功能
+- 指定 URL 生成短链（支持自定义别名 slug）
+- 幂等：同一 URL 多次创建返回同一短链
+- 通过 `/:slug` 302 跳转到原始 URL
+- 还原 API 查询原始 URL
+- 每次跳转计数（+1）与统计查询 API
+- 通过环境变量配置 KV 绑定名
 
-[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?from=github&template=functions-kv)
+## 接口
+- POST `/api/shorten`
+  - Body: `{ url: string; slug?: string }`
+  - Response: `{ slug, url, shortUrl }`
+  - 说明：
+    - 未传 `slug` 将自动生成
+    - 若该 URL 已存在，会直接返回已有短链（返回 200）
+- GET `/api/resolve?slug=abc123` 或 `/api/resolve?slug=https://你的域名/abc123` 或 `/api/resolve?url=https://你的域名/abc123`
+  - Response: `{ slug, url }` 或 `404`
+- GET `/:slug`
+  - 302 跳转至原始 URL
+  - 同时将访问计数 `c:{slug}` 加一
+- GET `/api/stats?slug=abc123`
+  - Response: `{ slug, url, visits }`
 
-## 入门
+## KV 键设计
+- `s:{slug}` => 原始 URL（正向映射）
+- `u:{url}`  => slug（反向映射，用于幂等）
+- `c:{slug}` => 访问计数（字符串数字）
 
-首先，运行开发服务器：
+## 环境变量
+- `DWZ_KV_BINDING`
+  - 运行时使用的 KV 绑定名
+  - 默认：`dwz_kv`
+  - 运行时查找顺序：`globalThis[bindingName]` -> `env[bindingName]`
 
+## 本地开发
 ```bash
+npm install
 npm run dev
-# 或
-yarn dev
-# 或
-pnpm dev
-# 或
-bun dev
 ```
+打开 http://localhost:3000 使用前端页面创建/还原短链。
 
-使用浏览器打开 [http://localhost:3000](http://localhost:3000) 查看结果。
+说明：EdgeOne CLI 本地开发可能将相对路径传递给函数，代码已通过请求头（`host`, `x-forwarded-proto`）拼出绝对 URL，确保解析与跳转正确。
 
-您可以通过修改 `app/page.tsx` 开始编辑页面。随着您编辑文件，页面会自动更新。
+## 部署（EdgeOne Pages）
+1）在项目中创建/绑定一个 KV 命名空间，绑定名设为 `dwz_kv`（或你自定义的名称）
+2）使用自定义绑定名时，在运行环境中设置 `DWZ_KV_BINDING=你的绑定名`
+3）部署本项目为 EdgeOne Pages 应用
 
-该项目使用 [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) 自动优化和加载 Inter，这是一个自定义的 Google 字体。
+## 技术栈
+- Next.js（前端 UI）
+- EdgeOne Pages Functions（Serverless API）
+- EdgeOne KV（存储）
+- TypeScript
 
-## 了解更多
-
-要了解有关 Next.js 的更多信息，请查看以下资源：
-
-- [Next.js 文档](https://nextjs.org/docs) - 了解 Next.js 的特性和 API。
-- [学习 Next.js](https://nextjs.org/learn) - 互动式 Next.js 教程。
-
-您可以查看 [Next.js GitHub 仓库](https://github.com/vercel/next.js/) - 欢迎您的反馈和贡献！
+## 许可协议
+MIT
