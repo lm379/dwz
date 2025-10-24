@@ -12,6 +12,22 @@ function resolveKV(env: Env): { kv?: KVNamespace; bindingName: string } {
     return { kv, bindingName };
 }
 
+function readApiToken(env: Env): string | undefined {
+    const g = globalThis as any;
+    const p = (typeof process !== 'undefined' ? (process as any).env : undefined) || {};
+    return (
+        (env as any)?.NEXT_PUBLIC_API_TOKEN ||
+        (env as any)?.API_TOKEN ||
+        (env as any)?.DWZ_API_TOKEN ||
+        p?.NEXT_PUBLIC_API_TOKEN ||
+        p?.API_TOKEN ||
+        p?.DWZ_API_TOKEN ||
+        g?.NEXT_PUBLIC_API_TOKEN ||
+        g?.API_TOKEN ||
+        g?.DWZ_API_TOKEN
+    );
+}
+
 export async function onRequest(context: { request: Request; env: Env }): Promise<Response> {
     const { request, env } = context;
     const { kv, bindingName } = resolveKV(env);
@@ -38,6 +54,36 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
             status: 400,
             headers: { 'content-type': 'application/json; charset=utf-8' },
         });
+    }
+
+    // Token check: only enforce when env token is set. Allow same-origin web UI without token.
+    const tokenEnv = readApiToken(env);
+    if (tokenEnv) {
+        const tokenReq = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '')
+            || (request.headers.get('x-api-token') || '');
+
+        // Resolve request origin
+        let reqOrigin: string;
+        try { reqOrigin = new URL(request.url).origin; }
+        catch {
+            const host = request.headers.get('host') || 'localhost';
+            const proto = request.headers.get('x-forwarded-proto') || 'http';
+            reqOrigin = `${proto}://${host}`;
+        }
+
+        // Parse referer origin
+        let refererOrigin = '';
+        const referer = request.headers.get('referer') || '';
+        try { refererOrigin = new URL(referer).origin; } catch { }
+
+        const isSameOrigin = refererOrigin && refererOrigin === reqOrigin;
+
+        if (!isSameOrigin && (!tokenReq || tokenReq !== tokenEnv)) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { 'content-type': 'application/json; charset=utf-8' },
+            });
+        }
     }
 
     const inputUrl = (body?.url || '').trim();

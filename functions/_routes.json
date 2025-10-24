@@ -1,0 +1,10 @@
+{
+  "include": ["/*"],
+  "exclude": [
+    "/",
+    "/_next/*",
+    "/favicon.ico",
+    "/robots.txt",
+    "/sitemap.xml"
+  ]
+}

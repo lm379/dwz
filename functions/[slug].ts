@@ -31,15 +31,20 @@ export async function onRequest(context: { request: Request; env: Env; params: {
     }
 
     const slug = (params?.slug || '').trim();
-    if (!slug) {
-        // Pass through to static/Next app for homepage and other routes
+    const pathname = (() => { try { return new URL(request.url).pathname; } catch { return '/'; } })();
+    const isStatic = pathname.startsWith('/_next/') || pathname === '/favicon.ico' || pathname === '/robots.txt' || pathname === '/sitemap.xml';
+
+    if (!slug || isStatic) {
+        // Prioritize ASSETS for static/Next resources, then fall back to default fetch
+        const { assets } = resolveAssets(env);
+        if (assets && typeof assets.fetch === 'function') {
+            try {
+                return await assets.fetch(request);
+            } catch {}
+        }
         try {
             return await fetch(request);
         } catch {
-            const { assets } = resolveAssets(env);
-            if (assets && typeof assets.fetch === 'function') {
-                return assets.fetch(request);
-            }
             return new Response('Not Found', { status: 404 });
         }
     }
