@@ -1,60 +1,193 @@
-# EdgeOne Pages URL Shortener (Functions + KV)
+# EdgeOne Pages URL Shortener
 
-A production-ready URL shortener built on EdgeOne Pages Functions with KV storage. Provides a complete RESTful API and a minimal Next.js UI for creating and resolving short links.
+> A production-ready URL shortener service built on EdgeOne Pages Functions with KV storage. Features a complete RESTful API and a minimal Next.js UI interface.
 
-## Features
-- Create short link for a given URL (support custom slug)
-- Idempotent: same URL returns the same slug
-- 302 redirect via path `/:slug`
-- Resolve API to get original URL
-- Visit counter (+1 on each redirect) and stats API
-- Configurable KV binding name via environment variable
+## Quick Start
 
-## Endpoints
-- POST `/api/shorten`
-  - Body: `{ url: string; slug?: string }`
-  - Response: `{ slug, url, shortUrl }`
-  - Notes: 
-    - If `slug` omitted, auto-generate
-    - If the URL already exists, returns the existing short link (200)
-- GET `/api/resolve?slug=abc123` or `/api/resolve?slug=https://your-domain/abc123` or `/api/resolve?url=https://your-domain/abc123`
-  - Response: `{ slug, url }` or `404`
-- GET `/:slug`
-  - 302 redirect to the original URL
-  - Increments visit counter `c:{slug}`
-- GET `/api/stats?slug=abc123`
-  - Response: `{ slug, url, visits }`
+> **Prerequisites**: Please apply for and enable EdgeOne Pages KV storage service first
 
-## KV Keys
-- `s:{slug}` => original URL (forward mapping)
-- `u:{url}`  => slug (reverse mapping for idempotency)
-- `c:{slug}` => visit counter (string number)
+### One-Click Deployment
+
+Choose the corresponding site to deploy:
+
+**International Site**  
+[![Use EdgeOne Pages to deploy](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/pages/new?repository-url=https://github.com/lm379/dwz)
+
+**China Site**  
+[![使用 EdgeOne Pages 部署](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://console.cloud.tencent.com/edgeone/pages/new?repository-url=https://github.com/lm379/dwz)
+
+### Manual Deployment
+
+1. **Fork Repository**: Fork this repository to your GitHub account
+2. **Bind Project**: Go to EdgeOne Pages console, bind your GitHub repository and select the forked repo
+3. **Configure Build**: Complete the configuration following the wizard and deploy
+4. **Additional Config**: If KV binding or environment variables were not configured during initial deployment, re-deploy after binding them
+
+### Configuration Guide
+
+After deployment, complete the following configuration:
+
+1. **Create KV Namespace**
+   - Create or attach a KV namespace in your project settings
+   - Set the binding name to `dwz_kv` (or your custom name)
+
+2. **Configure Environment Variables** (Optional)
+   - If using a custom KV binding name, set `DWZ_KV_BINDING` environment variable
+   - For API authentication protection, set `API_TOKEN` environment variable
+   - To display ICP filing info, set `ICP` environment variable
+
+3. **Re-deploy**
+   - Trigger a re-deployment after configuration to apply changes
+
+## API Documentation
+
+### Create Short Link
+
+**POST** `/api/shorten`
+
+Create a new short link or return an existing one.
+
+**Request Body**
+```json
+{
+  "url": "https://example.com/very/long/url",
+  "slug": "my-link"  // Optional, auto-generated if not provided
+}
+```
+
+**Response**
+```json
+{
+  "slug": "my-link",
+  "url": "https://example.com/very/long/url",
+  "shortUrl": "https://your.domain.com/s/my-link"
+}
+```
+
+**Notes**
+- Automatically generates a 7-character random slug if not provided
+- Same URL returns the same short link on multiple requests (idempotency)
+- If `API_TOKEN` is set, include in request headers:
+  - `Authorization: Bearer {API_TOKEN}` or
+  - `X-API-Token: {API_TOKEN}`
+
+---
+
+### Resolve Short Link
+
+**GET** `/api/resolve?slug={slug}`
+
+Query the original URL for a short link.
+
+**Query Parameters**
+- `slug`: Short link alias, e.g., `abc123`
+- Also accepts full short URL, e.g., `https://your.domain.com/s/abc123`
+
+**Response**
+```json
+{
+  "slug": "abc123",
+  "url": "https://example.com/original/url"
+}
+```
+
+---
+
+### Link Redirection
+
+**GET** `/s/:slug`
+
+302 redirect to the original URL and increment visit counter.
+
+**Example**
+```
+https://your.domain.com/s/abc123 → https://example.com/original/url
+```
+
+---
+
+## Architecture
+
+### KV Storage Key Design
+
+| Key Pattern | Value Type | Description |
+|-------------|------------|-------------|
+| `s:{slug}` | String | Forward mapping: short link alias → original URL |
+| `u:{url}` | String | Reverse mapping: original URL → short link alias (for idempotency) |
+| `c:{slug}` | String | Visit counter: stores the number of visits for a short link |
+
+### Tech Stack
+
+- **Frontend UI**: Next.js 14 + React + Tailwind CSS
+- **Backend API**: EdgeOne Pages Functions (serverless)
+- **Data Storage**: EdgeOne KV (key-value store)
+- **Development Language**: TypeScript
 
 ## Environment Variables
-- `DWZ_KV_BINDING`
-  - The KV binding name to use at runtime
-  - Default: `dwz_kv`
-  - Runtime lookup order: `globalThis[bindingName]` -> `env[bindingName]`
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `DWZ_KV_BINDING` | KV namespace binding name | `dwz_kv` | No |
+| `API_TOKEN` | API access token, requires header auth when enabled | - | No |
+| `ICP` | ICP filing number, displays at page footer when set | - | No |
+
+**Details**
+
+- **DWZ_KV_BINDING**: Set this if your KV binding name is not `dwz_kv`
+  - Runtime lookup order: `globalThis[bindingName]` → `env[bindingName]`
+  
+- **API_TOKEN**: Protects the short link creation endpoint from abuse
+  - When enabled, calling `/api/shorten` requires:
+    - `Authorization: Bearer {API_TOKEN}` or
+    - `X-API-Token: {API_TOKEN}`
+  - Same-origin requests (Web UI) don't require the token
+  
+- **ICP**: Required for mainland China users to display website filing information
 
 ## Local Development
+
+### 1. Install EdgeOne CLI
+
 ```bash
-npm install
-npm run dev
+npm install -g edgeone
 ```
-Then open http://localhost:3000. The UI lets you create and resolve short links.
 
-EdgeOne CLI dev mode may send relative URLs to the function. The code handles this when building absolute URLs by composing from request headers (`host`, `x-forwarded-proto`).
+### 2. Bind Project
 
-## Deployment (EdgeOne Pages)
-1) Create/attach a KV namespace and bind it with name `dwz_kv` (or your own name)
-2) If you use a custom binding name, set env `DWZ_KV_BINDING` to that name
-3) Deploy the project as an EdgeOne Pages app
+```bash
+edgeone pages link
+```
 
-## Tech Stack
-- Next.js (UI only)
-- EdgeOne Pages Functions (serverless APIs)
-- EdgeOne KV (storage)
-- TypeScript
+Follow the prompts to select or create an EdgeOne Pages project.
 
-## License
-MIT
+### 3. Configure KV
+
+Go to [EdgeOne Console](https://console.cloud.tencent.com/edgeone), find your bound project, and attach a KV namespace in the project settings.
+
+### 4. Start Development Server
+
+```bash
+edgeone pages dev
+```
+
+Visit http://localhost:8088 to view the application.
+
+### 5. Development Notes
+
+- Changes to `functions/` directory auto-reload
+- Changes to `app/` and `components/` require server restart
+- Local development environment automatically bypasses API Token validation
+
+---
+
+## Related Links
+
+- [EdgeOne Pages Documentation](https://edgeone.ai/docs/pages)
+- [EdgeOne KV Documentation](https://edgeone.ai/docs/kv)
+- [Issue Tracker](https://github.com/lm379/dwz/issues)
+
+---
+
+<p align="center">
+  <sub>Built with EdgeOne Pages ⚡</sub>
+</p>
