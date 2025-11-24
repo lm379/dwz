@@ -44,6 +44,19 @@ function readDisableFlag(env: Env): boolean {
     return v === '1' || v === 'true' || v === 'yes';
 }
 
+function readPassword(env: Env): string | undefined {
+    const g = globalThis as any;
+    const p = (typeof process !== 'undefined' ? (process as any).env : undefined) || {};
+    return (
+        (env as any)?.PASSWORD ||
+        (env as any)?.DWZ_PASSWORD ||
+        p?.PASSWORD ||
+        p?.DWZ_PASSWORD ||
+        g?.PASSWORD ||
+        g?.DWZ_PASSWORD
+    );
+}
+
 function isLocalDev(req: Request): boolean {
     const host = (req.headers.get('host') || '').toLowerCase();
     return /^localhost(:\d+)?$/.test(host) || /^127\.0\.0\.1(:\d+)?$/.test(host);
@@ -108,6 +121,18 @@ export async function onRequest(context: { request: Request; env: Env }): Promis
 
         if (!isSameOrigin && (!tokenReq || tokenReq !== tokenEnv)) {
             return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { 'content-type': 'application/json; charset=utf-8' },
+            });
+        }
+    }
+
+    // Password check: if PASSWORD env is set, require password in request body
+    const passwordEnv = readPassword(env);
+    if (passwordEnv && !localDev) {
+        const passwordReq = (body?.password || '').trim();
+        if (passwordReq !== passwordEnv) {
+            return new Response(JSON.stringify({ error: 'Invalid password' }), {
                 status: 401,
                 headers: { 'content-type': 'application/json; charset=utf-8' },
             });

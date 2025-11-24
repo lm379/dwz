@@ -143,6 +143,10 @@ https://your.domain.com/s/abc123 → https://example.com/original/url
 |--------|------|--------|------|
 | `DWZ_KV_BINDING` | KV 命名空间的绑定名称 | `dwz_kv` | 否 |
 | `API_TOKEN` | API 访问令牌，启用后需在请求头中携带 | - | 否 |
+| `PASSWORD` | 创建短链所需的密码，启用后需在请求体中提供 | - | 否 |
+| `NEXT_PUBLIC_PASSWORD_REQUIRED` | 设为 `true` 在 UI 中显示密码输入框（设置 PASSWORD 时也需要设置此变量） | - | 否 |
+| `NEXT_PUBLIC_ANNOUNCEMENT` | 页面右上角公告内容，显示 5 秒后自动隐藏，用户可手动关闭，支持 HTML 标签 | - | 否 |
+| `NEXT_PUBLIC_ANNOUNCEMENT_ENCODED` | URL 编码后的公告内容，优先级高于 `NEXT_PUBLIC_ANNOUNCEMENT`，适用于云平台限制特殊字符的场景 | - | 否 |
 | `ICP` | ICP 备案号，设置后显示在页面底部 | - | 否 |
 
 **说明**
@@ -155,6 +159,16 @@ https://your.domain.com/s/abc123 → https://example.com/original/url
     - `Authorization: Bearer {API_TOKEN}` 或
     - `X-API-Token: {API_TOKEN}`
   - 同源请求（Web UI）无需提供 Token
+
+- **PASSWORD**：用于保护短链创建，要求用户输入密码，防止滥用
+  - 启用后，调用 `/api/shorten` 需在请求体中提供：
+    - `{ "password": "your-password" }`
+  - 本地开发环境（localhost）会自动跳过密码验证
+
+- **NEXT_PUBLIC_PASSWORD_REQUIRED**：控制 Web UI 是否显示密码输入框
+  - 设置为 `true` 时，UI 会显示密码输入框
+  - 如果设置了 `PASSWORD` 环境变量，建议同时设置此变量为 `true`
+  - 此变量在构建时读取，无需运行时 API 请求
   
 - **ICP**：仅中国大陆用户需要，用于显示网站备案信息
 
@@ -196,8 +210,8 @@ edgeone pages dev
 
 ## 相关链接
 
-- [EdgeOne Pages 文档](https://edgeone.ai/docs/pages)
-- [EdgeOne KV 文档](https://edgeone.ai/docs/kv)
+- [EdgeOne Pages 文档](https://pages.edgeone.ai/zh/document/product-introduction)
+- [EdgeOne KV 文档](https://pages.edgeone.ai/zh/document/kv-storage)
 - [问题反馈](https://github.com/lm379/dwz/issues)
 
 ---

@@ -129,6 +129,10 @@ https://your.domain.com/s/abc123 → https://example.com/original/url
 |----------|-------------|---------|----------|
 | `DWZ_KV_BINDING` | KV namespace binding name | `dwz_kv` | No |
 | `API_TOKEN` | API access token, requires header auth when enabled | - | No |
+| `PASSWORD` | Password required for creating short links | - | No |
+| `NEXT_PUBLIC_PASSWORD_REQUIRED` | Set to `true` to show password input in UI (also set when PASSWORD is configured) | - | No |
+| `NEXT_PUBLIC_ANNOUNCEMENT` | Announcement text displayed in top-right corner, auto-hides after 5 seconds, user can manually close, supports HTML tags | - | No |
+| `NEXT_PUBLIC_ANNOUNCEMENT_ENCODED` | URL-encoded announcement content, takes priority over `NEXT_PUBLIC_ANNOUNCEMENT`, useful for cloud platforms with special character restrictions | - | No |
 | `ICP` | ICP filing number, displays at page footer when set | - | No |
 
 **Details**
@@ -141,6 +145,16 @@ https://your.domain.com/s/abc123 → https://example.com/original/url
     - `Authorization: Bearer {API_TOKEN}` or
     - `X-API-Token: {API_TOKEN}`
   - Same-origin requests (Web UI) don't require the token
+
+- **PASSWORD**: Protects short link creation by requiring password input
+  - When enabled, calling `/api/shorten` requires:
+    - `{ "password": "your-password" }` in request body
+  - Local development environment (localhost) automatically bypasses password validation
+
+- **NEXT_PUBLIC_PASSWORD_REQUIRED**: Controls whether the Web UI displays password input
+  - Set to `true` to show the password input field in UI
+  - Should be set to `true` when `PASSWORD` is configured
+  - Read at build time, no runtime API request needed
   
 - **ICP**: Required for mainland China users to display website filing information
 
@@ -182,8 +196,8 @@ Visit http://localhost:8088 to view the application.
 
 ## Related Links
 
-- [EdgeOne Pages Documentation](https://edgeone.ai/docs/pages)
-- [EdgeOne KV Documentation](https://edgeone.ai/docs/kv)
+- [EdgeOne Pages Documentation](https://pages.edgeone.ai/document/product-introduction)
+- [EdgeOne KV Documentation](https://pages.edgeone.ai/document/kv-storage)
 - [Issue Tracker](https://github.com/lm379/dwz/issues)
 
 ---
