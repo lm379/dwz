@@ -1,0 +1,7 @@
+{
+    "name": "dwz-edgeone",
+    "buildCommand": "npm run build",
+    "installCommand": "npm install",
+    "outputDirectory": "./out",
+    "nodeVersion": "22.11.0" 
+}

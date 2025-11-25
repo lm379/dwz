@@ -38,7 +38,6 @@ next-env.d.ts
 # Tencent Cloud Edge Functions
 .env
 .edgeone
-edgeone.json
 
 # Tencent Cloud EdgeOne
 .env

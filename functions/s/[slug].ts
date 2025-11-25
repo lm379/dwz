@@ -32,7 +32,10 @@ export async function onRequest(context: { request: Request; env: Env; params: {
     try {
         const target = await kv.get(`s:${slug}`);
         if (!target) {
-            return new Response('Not Found', { status: 404 });
+            // Redirect to Next.js 404 page
+            const url = new URL(request.url);
+            url.pathname = '/404';
+            return Response.redirect(url.toString(), 302);
         }
 
         const counterKey = `c:${slug}`;
